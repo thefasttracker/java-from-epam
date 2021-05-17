@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<java version="1.8.0_281" class="java.beans.XMLDecoder">
+ <object class="org.example.StudentXml">
+  <void property="id">
+   <int>555777</int>
+  </void>
+  <void property="name">
+   <string>Janka</string>
+  </void>
+  <void property="password">
+   <string>VKL_1410</string>
+  </void>
+ </object>
+</java>
