@@ -6,6 +6,12 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+//Filter change length Not change elems (Predicate)
+//Map changes elems Not changes length (Function)
+//Peek Not changes (Runnable)
+//FlatMap changes length And elems (Stream<R> Function<T, Stream<R>)
 
 public class MyInterface {
     public static void main(String[] args) {
@@ -95,4 +101,62 @@ class BrightControl {
 
 interface Ee {
     static void ff() {};
+}
+
+class App02 {
+    public static void main(String[] args) {
+        Britable print = App02::print;
+        Consumer<String> print1 = App02::printC;
+        Supplier<String> print2 = App02::printS;
+        //etc...
+        print.setBright();
+    }
+
+    private static void printC(String o) { System.out.println(o); }
+    private static String printS() {  return "42"; }
+    private static void print() { System.out.println("hello!"); }
+}
+
+//anonymous class vs functional interface
+class IFuncVsAnon {
+    public static void main(String[] args) {
+
+        System.out.println(iter.get());
+        System.out.println(iter.get());
+        System.out.println(iter.get());
+        System.out.println(iter.get()); // 0,0,0,0
+        System.out.println(iter1.get());
+        System.out.println(iter1.get());
+        System.out.println(iter1.get());
+        System.out.println(iter1.get()); //0,1,2,3
+    }
+
+    static public Supplier<Long> iter = () -> { long count = 0; return count++; };
+
+    static public Supplier<Long> iter1 = new Supplier<Long>() { long count = 0; @Override public Long get() {  return count++; } };
+}
+
+//flatmap interface
+class myFlatmap {
+    //Filter change length Not change elems (Predicate)
+    //Map changes elems Not changes length (Function)
+    //Peek Not changes (Runnable)
+    //flatMap changes length And elems (Stream<R> Function<T, Stream<R>)
+    public static void main(String[] args) {
+        Function<String, Stream<String>> f = s -> Arrays.stream(s.split(" "));
+        System.out.println(
+                Stream.of("1", "2 33", "4 55 666")
+                .flatMap(f)
+                .collect(Collectors.toList())
+        );
+        Stream.of(1,2,3,4,5,6,7,8,9,10).forEach(k -> {
+            System.out.println(
+                Stream
+                    .iterate(1, i -> i + 1)
+                    .limit(10)
+                    .parallel()
+                    .reduce(0, (x, y) -> x + y)
+            );
+        });
+    }
 }

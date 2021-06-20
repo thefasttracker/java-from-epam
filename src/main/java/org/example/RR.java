@@ -16,7 +16,6 @@ class GenericsMain {
         System.out.print(i1.get() == i2.get()); System.out.print(i1.get().intValue() == i2.get().intValue());
         System.out.println(Roles.valueOf("admin".toUpperCase()));
         First f = new Second();
-
     }
 }
 

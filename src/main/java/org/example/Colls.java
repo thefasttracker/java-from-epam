@@ -1,7 +1,9 @@
 package org.example;
 
+import com.oracle.tools.packager.Log;
 import lombok.Data;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -444,12 +446,16 @@ class AlgoritmMain {
     }
 }
 
+@Slf4j
 class Order1 {
     long orderId;
     double amount;
     public Order1(long orderId, double amount) {
         this.orderId = orderId;
-        this.amount = amount; }
+        this.amount = amount;
+        Log.info("dfdsfs");
+        System.err.println();
+    }
     public String toString() {
         return orderId + ", " + amount ;
     }
