@@ -48,3 +48,10 @@ abstract class Abs {
     }
     abstract void s();
 }
+
+class App001 {
+    private void g(){}
+}
+class App002 extends App001 {
+    private void g(){}
+}

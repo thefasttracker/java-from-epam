@@ -1,11 +1,15 @@
 package org.example;
 
+import lombok.NonNull;
+
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.*;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -59,6 +63,8 @@ public class ThreadTest {
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
+
+        Future<Integer> inte = Executors.newSingleThreadExecutor().submit(new ActionCallable(list));
 
         // ForkJoin with RecursiveTask (~ Callable) thread object
         ForkJoinTask<Long> task = new SumRecursiveTask(numbers);
@@ -170,10 +176,10 @@ class WalkThread extends Thread { //1
     }
 }
 
-class TalkThread implements Runnable { //2
+class TalkThread implements Runnable{ //2
     @Override
     public void run() {
-        try {
+        try { // - зачем лишний try / catch?
             for (int i = 0; i < 70; i++) {
                 System.out.println("Talk -->" + i);
                 try {
@@ -245,7 +251,7 @@ class SumRecursiveTask extends RecursiveTask<Long> {
                 result += longList.get(i);
             }
         } else {
-            int middle = begin + length / 2;
+            int middle = begin + length >>> 1; // divide by 2
             SumRecursiveTask taskLeft = new SumRecursiveTask(longList, begin, middle);
             taskLeft.fork(); // run async
             SumRecursiveTask taskRight = new SumRecursiveTask(longList, middle, end);
@@ -515,23 +521,26 @@ class SynchroBlockMain {
     static int counter;
     public static void main(String[] args) {
         StringBuilder info = new StringBuilder();
+        StringBuilder test = new StringBuilder();
         new Thread(() -> {
             synchronized (info) {
                 do {
                     info.append('A');
+                    test.append('1');
                     System.out.println(info);
                     try {
                         TimeUnit.MILLISECONDS.sleep(100);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                } while (counter++ < 2) ;
+                } while (counter++ < 2);
             }
         }).start();
         new Thread(() -> {
             synchronized (info) {
                 while(counter++ < 6) {
                     info.append('Z');
+                    test.append('2');
                     System.out.println(info);
                 }
             }
@@ -716,5 +725,435 @@ class WaitTMain {
             e.printStackTrace();
         }
         service.shutdown();
+    }
+}
+
+class rerew {
+    public static void main(String[] args) {
+        ExecutorService es = Executors.newSingleThreadExecutor();
+        Future<Integer> inte1 = es.submit(new ActionCallable(
+                IntStream.range(1, 100).boxed().collect(Collectors.toList())));
+        Future<Integer> inte2 = es.submit(() -> 5);
+        es.shutdown();
+        try {
+            System.out.println(inte1.get());
+            System.out.println(inte2.get());
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
+        Runnable tt = () -> {
+            for (int i = 0; i < 70; i++) {
+                System.out.println("Talk -->" + i);
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        Thread talk2 = new Thread(tt);
+        talk2.start();
+    }
+}
+
+class Appe {
+    public static volatile int value = 0;
+    public static AtomicInteger atomic = new AtomicInteger(0);
+
+    public static void main(String[] args) throws InterruptedException, ExecutionException {
+        Runnable task = () -> {
+            for (int i = 0; i < 10000; i++) {
+                value++;
+                atomic.incrementAndGet();
+            }
+        };
+        for (int i = 0; i < 3; i++) {
+            new Thread(task).start();
+        }
+        Thread.sleep(300);
+        System.out.println(value);
+        System.out.println(atomic.get());
+
+        Callable<String> callable = () -> Thread.currentThread().getName();
+        ExecutorService service = Executors.newFixedThreadPool(2);
+        for (int i = 0; i < 5; i++) {
+            Future result = service.submit(callable);
+            System.out.println(result.get());
+        }
+        service.shutdown();
+    }
+}
+
+class App00 {
+    static void f() {
+        System.out.println("f");
+    }
+    public static void main(String ...args) {
+        final Object monitor = new Object();
+        App00 app = null;
+        app.f();
+        new Thread(() -> {
+            synchronized (monitor) {
+                System.out.println(Thread.holdsLock(monitor));
+                while (true) {
+                    System.out.print("A");
+                    try {
+                        Thread.sleep(1 * 1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }).start();
+        new Thread(() -> {
+            System.out.println(Thread.holdsLock(monitor));
+            synchronized (monitor) {
+                while (true) {
+                    System.out.print("B");
+                    try {
+                        Thread.sleep(1 * 1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }).start();
+    }
+}
+
+//synchronised or volatile do happens-before, but volatile - only atomic operations
+class App01 {
+    static /*volatile*/ int counter;
+    static volatile boolean finish1;
+    static volatile boolean finish2;
+
+    private static synchronized void inc() {
+        counter++;
+    }
+
+    public static void main(String... args) throws InterruptedException {
+        new Thread(() -> {
+            for (int i=0;i<10_000_000;i++) {
+                inc();
+            }
+            finish1 = true;
+        }).start();
+        new Thread(() -> {
+            for (int i=0;i<10_000_000;i++) {
+                inc();
+            }
+            finish2 = true;
+        }).start();
+        while(!(finish1 && finish2));
+        System.out.println(counter);
+        Collections.emptyList();
+    }
+
+}
+
+// Producer / Consumer Thread
+class ThreadQueue {
+    public static void main(String[] args) {
+        final BlockingQueue<Integer> queue = new ArrayBlockingQueue<>(16);
+
+        //Producer
+        new Thread(() -> {
+            int counter = 0;
+            while (true) {
+                try {
+                    Thread.sleep(1000);
+                    queue.put(++counter);
+                    System.out.println("put: " + counter);
+                } catch (InterruptedException ignore) { /*NOP*/; }
+            }
+        }).start();
+
+        //Consumer
+        new Thread(() -> {
+            while (true) {
+                try {
+                    int data = queue.take();
+                    System.out.println("take: " + data);
+                } catch (InterruptedException ignore) { /*NOP*/; }
+            }
+        }).start();
+    }
+}
+
+//Single element blocking queue
+class SingleElementBlockingQueue{
+    private Integer el = null;
+    public synchronized void put(int newEl) throws InterruptedException {
+        while (el != null) {
+            wait();
+        }
+        el = newEl;
+        notifyAll();
+    }
+    public synchronized int get() throws InterruptedException {
+        while (el == null) {
+            wait();
+        }
+        Integer result = el;
+        el = null;
+        notifyAll();
+        return result;
+    }
+}
+
+
+//kill Tread if other Thread died with UncaughtExceptionHandler
+class P {
+    public static void main(String[] args) {
+        final ThreadGroup group = new ThreadGroup("stub");
+        Thread.UncaughtExceptionHandler exceptionHandler = new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                group.interrupt();
+            }
+        };
+        Thread p0 = new Thread(group, () -> {
+            try {
+                Thread.sleep(Long.MAX_VALUE);
+            } catch (InterruptedException e) {
+                System.out.println("p0 Killed");
+            }
+        });
+        p0.setUncaughtExceptionHandler(exceptionHandler);
+        p0.start();
+
+        Thread p1 = new Thread(group, () -> {
+            System.out.println("p1 dead");
+            throw new Error();
+        });
+        p1.setUncaughtExceptionHandler(exceptionHandler);
+        p1.start();
+    }
+}
+
+//1. fairness 2. Lock Unlock независимы
+class SingleElemBuffer {
+    private final Lock lock = new ReentrantLock(true); //fairness
+    private final Condition notEmpty = lock.newCondition();
+    private final Condition notFull = lock.newCondition();
+    private Integer el = null;
+
+    public void put(int newEl) throws InterruptedException {
+        lock.lock();
+        try {
+            while (el != null) { notFull.await(); }
+            el = newEl;
+            notEmpty.signal();
+        } finally {
+            lock.unlock();
+        }
+    }
+    public int get() throws InterruptedException {
+        lock.lock();
+        try {
+            while (el == null) {
+                notEmpty.await();
+            }
+            Integer result = el;
+            el = null;
+            notFull.signal();
+            return result;
+       } finally {
+            lock.unlock();
+        }
+    }
+}
+
+//prints rr or w
+class TTT {
+    public static void main(String[] args) {
+        ReadWriteLock rw = new ReentrantReadWriteLock();
+        final Lock r = rw.readLock();
+        final Lock w = rw.writeLock();
+
+        new Thread(() -> {
+            r.lock(); System.out.println("r0"); while(true); //r
+        }).start();
+
+        new Thread(() -> {
+            r.lock(); System.out.println("r1"); while(true); //r
+        }).start();
+
+        new Thread(() -> {
+            w.lock(); System.out.println("w0"); while(true); //w
+        }).start();
+    }
+}
+
+//ReentrantReadWriteBlock
+class Cache {
+    private Map<Integer, String> map = new ConcurrentHashMap<>(1024, 0.75f,1024);
+    public String get(String key) {return key;}
+    public void put(Integer key, String value) {};
+    public <K, V> Map<K, V> synchronizedMap(Map<K, V> m) {
+        return new myMap<>();
+    }
+    private static class myMap<T0, T1> implements Map<T0, T1> {
+        private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
+        private final Lock rLock = rwLock.readLock();
+        private final Lock wLock = rwLock.writeLock();
+        private Map<T0, T1> m;
+        @Override
+        public int size() { rLock.lock(); try { return m.size(); } finally { rLock.unlock(); } }
+        @Override
+        public T1 put(T0 key, T1 value) { wLock.lock(); try { return m.put(key, value); } finally { rLock.unlock();} }
+        @Override
+        public boolean isEmpty() { return false; }
+        @Override
+        public boolean containsKey(Object key) { return false; }
+        @Override
+        public boolean containsValue(Object value) { return false; }
+        @Override
+        public T1 get(Object key) { return null; }
+        @Override
+        public T1 remove(Object key) { return null; }
+        @Override
+        public void putAll(@NonNull Map<? extends T0, ? extends T1> m) { }
+        @Override
+        public void clear() { }
+        @NonNull @Override
+        public Set<T0> keySet() { return null;  }
+        @NonNull @Override
+        public Collection<T1> values() { return null; }
+        @NonNull  @Override
+        public Set<Entry<T0, T1>> entrySet() { return null; }
+    }
+}
+
+//My ThreadPool and Executor realization
+class MyThreadPool implements Executor{
+//    private final BlockingQueue<Runnable> taskQue = new ArrayBlockingQueue<>(256);
+    private final BlockingQueue<Runnable> taskQue = new LinkedBlockingDeque<>(256);
+    private final Thread[] pool;
+    private final AtomicInteger adder = new AtomicInteger(0);
+    private final AtomicInteger taker = new AtomicInteger(0);
+    public MyThreadPool(int threadCount) {
+        this.pool = new Thread[threadCount];
+        for (int k = 0; k < threadCount; k++) {
+            pool[k] = new Thread(() -> {
+                while(true) {
+                    try {
+                        System.out.println("taskQue.size() " + taskQue.size());
+                        Runnable nextTask = taskQue.take();
+                        nextTask.run();
+                        System.out.println("task " + taker.getAndIncrement() + " taken");
+                    } catch (InterruptedException e) { break; }
+                }
+            });
+            pool[k].start();
+        }
+    }
+
+    @Override
+    public void execute(@NonNull Runnable command) {
+        if(!taskQue.offer(command)) { System.out.println("Rejected!");
+        } else { System.out.println("Task " + adder.getAndIncrement() + " added!"); }
+    }
+}
+
+class Demo004_MyThreadPool {
+    public static void main(String[] args) {
+        Executor executor = new MyThreadPool(2);
+        executor.execute(getTask());
+        executor.execute(getTask());
+        executor.execute(getTask());
+        executor.execute(getTask());
+    }
+    private static Runnable getTask() {
+        return new Runnable() {
+            @Override
+            public void run() { System.out.println("Hello from " + Thread.currentThread());}
+        };
+    }
+}
+//End of My ThreadPool and Executor realization
+
+//My Blocked Stack with synchronized
+class MyBlockedLinkedStack<T> {
+
+    private Node<T> tail = null;
+    private Object mutex = new Object();
+
+    public void push(T newElem) {
+        synchronized (mutex) {
+            this.tail = new Node<>(newElem, tail);
+        }
+    }
+    public T pop() {
+        synchronized (mutex) {
+            T result = tail.value;
+            this.tail = tail.next;
+            return result;
+        }
+    }
+
+    private static class Node<E> {
+        final E value;
+        final Node<E> next;
+        public Node(E value, Node<E> next) {
+            this.value = value;
+            this.next = next;
+        }
+
+    }
+}
+//End of My Blocked Stack with synchronized
+
+//My Blocked Stack with Atomic
+class MyBlockedLinkedStackAtomic<T> {
+
+    private AtomicReference<Node<T>> tail = null;
+
+    public void push(T newElem) {
+        Node<T> newTail = new Node<T>(newElem, null);
+        while(true) {
+            Node<T> oldTail = this.tail.get();
+            newTail.next = oldTail;
+            if(tail.compareAndSet(oldTail, newTail)) {
+                break;
+            }
+        }
+    }
+    public T pop() {
+        while (true) {
+            Node<T> oldTail = tail.get();
+            Node<T> newTail = oldTail.next;
+            if(tail.compareAndSet(oldTail, newTail)) {
+                return oldTail.value;
+            }
+        }
+    }
+
+    private static class Node<E> {
+        final E value;
+        Node<E> next;
+        public Node(E value, Node<E> next) {
+            this.value = value;
+            this.next = next;
+        }
+    }
+}
+//End of My Blocked Stack with Atomic
+
+// future runnable when complete returns null or monitor exception
+class RunnableFuture {
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
+        ExecutorService executorService = Executors.newCachedThreadPool();
+        Future future = executorService.submit(new Runnable() {
+            public void run() {
+                System.out.println("Asynchronous task");
+                try {
+                    wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        future.get();  //returns null if the task has finished correctly.
     }
 }

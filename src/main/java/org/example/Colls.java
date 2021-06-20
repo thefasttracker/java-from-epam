@@ -1,7 +1,9 @@
 package org.example;
 
+import com.oracle.tools.packager.Log;
 import lombok.Data;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -444,12 +446,16 @@ class AlgoritmMain {
     }
 }
 
+@Slf4j
 class Order1 {
     long orderId;
     double amount;
     public Order1(long orderId, double amount) {
         this.orderId = orderId;
-        this.amount = amount; }
+        this.amount = amount;
+        Log.info("dfdsfs");
+        System.err.println();
+    }
     public String toString() {
         return orderId + ", " + amount ;
     }
@@ -459,5 +465,14 @@ class Order1 {
                 new Order1(7, 70));
         orders.stream()
                 .reduce((p1, p2) -> p1.amount > p2.amount ? p1 : p2) .ifPresent(System.out::println);
+    }
+}
+class HashMapTest {
+    public static void main(String[] args) {
+        Map<Integer, String> map = new HashMap<>();
+        map.put(1, "One");
+        map.put(2, "Two");
+        map.put(3, "Three");
+        System.out.println(map.entrySet());
     }
 }

@@ -25,7 +25,7 @@ public class App {
 
 @Data
 @AllArgsConstructor
-class Order implements Cloneable{
+class Order implements Cloneable {
     private long orderId;
     private double sum;
 
