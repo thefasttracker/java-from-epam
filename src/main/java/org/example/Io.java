@@ -6,12 +6,14 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributeView;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.function.Predicate;
 
 public class Io {
     public static void main(String[] args) {
@@ -192,11 +194,25 @@ class PrintMain {
 class Panda {
     int age;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
 
         Panda p1 = new Panda();
         p1.age = 1;
         check(p1, p -> p.age < 5);
+
+        Path path1 = Paths.get("data/res.txt");
+        BasicFileAttributeView view = Files.getFileAttributeView(path1, BasicFileAttributeView.class);
+        BasicFileAttributes attributes = view.readAttributes();
+        System.out.println(attributes.lastModifiedTime());
+        System.out.println(FileSystems.getDefault().supportedFileAttributeViews());
+
+        Path p2 = Paths.get("cat","..","dog");
+        System.out.println(p2);
+        System.out.println(Paths.get("..").toRealPath().getParent());
+        System.out.println(Paths.get("..").toAbsolutePath());
+        System.out.println(Paths.get("..").getFileName());
+        Path path2 = path1.normalize().relativize(Paths.get("lion"));
+        System.out.println(path1.normalize() + " "+ path2);
     }
 
     private static void check(Panda panda, Predicate<Panda> pred) {

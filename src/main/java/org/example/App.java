@@ -51,4 +51,72 @@ class Base {
     }
     Base() {this(1); }
 }
-class Current extends Base { }
+
+class AAA {
+    protected int i = 5;
+    public int getI() {
+        return i;
+    }
+}
+
+class BBB extends AAA {
+
+    public void process(AAA a) {
+        a.i = a.i * 2;
+    }
+
+    public static void main(String[] args) {
+        AAA a = new BBB();
+        BBB b = new BBB();
+        b.process(a);
+        System.out.println(a.getI());
+    }
+
+}
+
+abstract class CCC {
+    final void fds(){};
+    public static void main(String[] args) {
+        AAA a = new BBB();
+        BBB b = new BBB();
+        b.process(a);
+        System.out.println(a.getI());
+    }
+}
+
+interface I1 {
+    int value = 1;
+    static void h() {
+        System.out.println("I2");
+    };
+}
+
+interface I2 extends I1 {
+    int value = 1;
+    default void h() {
+        System.out.println("I2");
+    };
+}
+
+class TestClass implements I1, I2 {
+
+    public void h() {
+        System.out.println("Class");
+    };
+
+    public static void main(String[] args) {
+        TestClass ts = new TestClass();
+        ts.h();
+
+        TreeSet<Integer> original = new TreeSet<>();
+        original.add(1);
+        original.add(6);
+        original.add(2);
+        original.add(7);
+
+        TreeSet<Integer> sub = (TreeSet<Integer>) original.subSet(1,7);
+        sub.add(5);
+        sub.forEach(System.out::println);
+    }
+}
+

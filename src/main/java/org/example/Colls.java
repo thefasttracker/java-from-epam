@@ -474,5 +474,19 @@ class HashMapTest {
         map.put(2, "Two");
         map.put(3, "Three");
         System.out.println(map.entrySet());
+
+        Integer i1 = 1000;
+        Integer i2 = 1000;
+        Integer i3 = 10;
+        Integer i4 = 10;
+        System.out.println(i1 == i2); //Reference equality
+        System.out.println(i1 != i2); //Reference equality
+        System.out.println(i3 == i4); //The JLS states that auto-boxing of numbers in the range of -128 to 127
+        System.out.println(i3 != i4); //will result in the same object. Integer constant pool?
+
+        Set<String> set = new HashSet<>();
+        set.add("1");
+        set.add("2");
+        set.add("3");
     }
 }

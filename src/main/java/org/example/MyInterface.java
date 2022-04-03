@@ -1,9 +1,7 @@
 package org.example;
 
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Random;
+import java.time.Instant;
+import java.util.*;
 import java.util.function.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -159,4 +157,114 @@ class myFlatmap {
             );
         });
     }
+}
+
+interface Carnivore{
+    default int calories(List<String> food){
+        System.out.println("food.size()*100: " + food.size()*100);
+        return food.size()*100;
+    }
+    int eat(List<String> foods);
+}
+
+class Tiger implements Carnivore{
+    public int eat(List<String> foods){
+        System.out.println("Eating "+foods);
+        return foods.size()*200;
+    }
+}
+
+class TestClass1 {
+    public static int size(List<String> names){
+        System.out.println("names.size()*2: " + names.size()*100);
+        return names.size()*2;
+    }
+    public static void process(List<String> names, Carnivore c){
+        c.eat(names);
+    }
+    public static void main(String[] args) {
+        List<String> fnames = Arrays.asList("a", "b", "c");
+        Tiger t = new Tiger();
+        process(fnames, TestClass1::size);
+        process(fnames, t::calories);
+        process(fnames, a -> t.eat(a));
+        UUU uuu = new UUU() {
+            public <T> void set(T t) {}
+        };
+        uuu.set("dsa");
+        List<Integer> ls = Arrays.asList(1,2,3);
+    }
+}
+
+interface UUU {
+    <T> void set(T t);
+}
+
+
+
+class TestClass3 {
+
+    public double process(double payment, int rate) {
+        double defaultrate = 0.10;
+        if(rate>10) defaultrate = rate;  //2
+
+        class Implement {
+            public int apply(double data) {
+                Function<Integer, Integer> f = x->x+(int)(x*rate);  //3
+                return f.apply((int)data);
+            }
+
+        }
+        Implement i = new Implement();
+        return i.apply(payment);
+    }
+ }
+
+class Eerwre {
+
+    static void getDar() {};
+    static int ew;
+    static class User {
+
+        String name;
+        int age;
+
+        public int getAge() {
+            return age;
+        }
+
+        public User(String name, int age) {
+            this.name = name;
+            this.age = age;
+        }
+    }
+     public static void main(String[] args) {
+         TestClass3 tc3 = new TestClass3();
+         System.out.println(tc3.process(5.0, 22));
+
+         Rerw.getDar();
+         Rerw rer = new Rerw();
+         rer.getDar();
+
+
+         BinaryOperator<String> bo = String::concat;
+         BiFunction<String, Integer, String> ba = (s, n) -> s;
+         List<String> names  = new ArrayList<>();
+         names.add("Bill");
+         names.add("George");
+         names.add("Obama");
+         String finalvalue = names.stream().reduce("Hello : ", bo);
+         System.out.println(finalvalue);
+         List<User> users = Arrays.asList(new User("John", 30), new User("Julie", 35));
+         int result = users.stream()
+                 .reduce(0, (partialAgeResult, user) -> partialAgeResult + user.getAge(), Integer::sum);
+         System.out.println(Instant.now());
+     }
+}
+
+class Rerw extends Eerwre implements wewe {
+}
+
+interface wewe {
+    static void ww() {};
 }

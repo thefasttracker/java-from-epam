@@ -10,8 +10,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.*;
+import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
@@ -157,6 +159,21 @@ public class ThreadTest {
         daemon.start();
         normal.start();
         System.out.println("end of main");
+
+        //ScheduledExecutorService
+        ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor();
+        ses.scheduleAtFixedRate(()-> System.out.println("ScheduledExecutorService scheduleAtFixedRate"),
+                1,1,TimeUnit.SECONDS);
+
+        //elegant list with concurrent operations results
+        ExecutorService service = Executors.newCachedThreadPool();
+        final List<Future<?>> results = new ArrayList<>();
+        IntStream
+            .range(0, 10)
+            .forEach(i -> results.add(
+                    service.submit(() -> i))
+            );
+        service.shutdown();
     }
 }
 
@@ -1157,5 +1174,72 @@ class RunnableFuture {
             }
         });
         future.get();  //returns null if the task has finished correctly.
+    }
+}
+
+class AA {
+    static int counter = 0;
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
+        ExecutorService service = Executors.newCachedThreadPool();
+        final List<Future<?>> results = new ArrayList<>();
+        IntStream
+                .iterate(0, i -> i+1)
+                .limit(10)
+                .forEach(i -> results.add(
+                        service.submit(() -> counter + i))
+                );
+        service.shutdown();
+        for (Future<?> result : results) {
+            System.out.println(result.get());
+        }
+    }
+}
+
+
+class Account {
+        private String id;
+        public Account(String id){
+            this.id = id; }
+    public void p() {
+        System.out.println("A");
+    }
+}
+
+class BankAccount extends Account{
+    private double balance;
+    public BankAccount(String id, double balance){
+        super(id);
+        this.balance = balance;
+    }
+    public double getBalance() {
+        return balance;
+    }
+    public void p() {
+        System.out.println("B");
+    }
+
+    public static void main(String[] args) {
+
+        DoubleStream ds = DoubleStream.of(1,2,3);
+        System.out.println(0.0 == 0);
+
+        List<StringBuilder> messages = Arrays.asList(new StringBuilder(), new StringBuilder());
+        messages.stream().forEach(s->s.append("helloworld"));
+        messages.forEach(s->{
+            s.insert(5,",");
+            System.out.println(s); });
+        Map<String, Account> myAccts = new HashMap<>();
+        myAccts.put("111", new Account("111"));
+        myAccts.put("222", new BankAccount("111", 200.0));
+        BiFunction<String, Account, Account> bif = (a1, a2) -> a2 instanceof BankAccount
+                ? new BankAccount(a1, 300.0)
+                : new Account(a1); //1
+        myAccts.computeIfPresent("111", bif);//2
+        BankAccount ba = (BankAccount) myAccts.get("222");
+        System.out.println(ba.getBalance());
+        Account acc = new BankAccount("1", 1);
+        BankAccount acc1 = new BankAccount("1", 1);
+        acc.p();
+        acc1.p();
     }
 }

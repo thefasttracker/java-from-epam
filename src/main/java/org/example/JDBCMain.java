@@ -1,12 +1,32 @@
 package org.example;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 
 public class JDBCMain {
-    public static void main(String[] args) {
+
+     public static void main(String[] args) throws SQLException, ClassNotFoundException {
+
+        //Class.forName("org.postgresql.Driver");
+        final String url = "jdbc:derby:zoo";
+        try (Connection conn = DriverManager.getConnection(url);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("select a from b")) {
+
+            System.out.println(conn);
+            while (rs.next()) {
+                System.out.println(rs.getString(1));
+            }
+
+            boolean isResultSet = stmt.execute("select a from b");
+            if (isResultSet) {
+                stmt.getResultSet();
+            } else {
+                stmt.getUpdateCount();
+            }
+        }
+    }
+
+   /* public static void main(String[] args) {
 
         Connection connection = null;
         Statement statement = null;
@@ -25,5 +45,5 @@ public class JDBCMain {
                 throwables.printStackTrace();
             }
         };
-    }
+    }*/
 }
